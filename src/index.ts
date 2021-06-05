@@ -33,7 +33,7 @@ type PDFElements = PDFTextElement | PDFViewElement | PDFDocumentElement
 // !SECTION
 
 const pdf = new PDFDocument()
-const stream = pdf.pipe(fs.createWriteStream('../meow.pdf'))
+const stream = pdf.pipe(fs.createWriteStream('../file.pdf'))
 
 // NOTE: Define Tags to be compiled
 const View = definePDFComponent('View')
@@ -45,13 +45,16 @@ const Document = definePDFComponent('Document')
 const App = defineComponent({
   components: {
     'Text': Text,
-    'View': View
+    'View': View,
+    'Document': Document
   },
   render: compile(`
-    <View>
-      <Text :styles="{color: 'red'}">some text</Text>
-      <Text>some text</Text>
-    </View>
+    <Document>
+      <View>
+        <Text :styles="{color: 'red'}">some text</Text>
+        <Text>some text</Text>
+      </View>
+    </Document>
   `)
 })
 
@@ -89,6 +92,10 @@ const nodeOps: RendererOptions<PDFNodes, PDFElements> = {
   },
 
   createElement: (tag) => {
+    if (tag === 'Document') {
+      return new PDFDocumentElement()
+    }
+
     if (tag === 'View') {
       return new PDFViewElement()
     }
@@ -96,6 +103,7 @@ const nodeOps: RendererOptions<PDFNodes, PDFElements> = {
     if (tag === 'Text') {
       return new PDFTextElement()
     }
+
 
     console.log(`createElement: ${tag}`);
 
@@ -132,7 +140,7 @@ const app = createApp({
 const root = new PDFDocumentElement()
 
 // NOTE: for debugging
-// const vm = app.mount(root)
+const vm = app.mount(root)
 // console.log(vm.$.subTree);
 
 const defaultStyles: any = {
@@ -144,22 +152,25 @@ const getParentStyle: Function = (attr: string, parent: PDFNodes | PDFElements):
     return defaultStyles[attr]
   }
 
-  if (attr in parent.styles) {
+  if (parent && attr in parent.styles) {
     return parent.styles[attr]
   }
 
-  return getParentStyle(attr, nodeMap[parent.parent!])
+  if (parent)
+    return getParentStyle(attr, nodeMap[parent.parent!])
 }
 
 const draw = (node: PDFNodes | PDFElements) => {
   const color = getParentStyle('color', node)
   pdf.fill(color)
 
-  // assign styles here is a must!
-  for (const [key, val] of Object.entries(node.styles)) {
-    if (key === 'color') {
-      // console.log('color');
-      pdf.fill(val)
+  if (node) {
+    // assign styles here is a must!
+    for (const [key, val] of Object.entries(node.styles)) {
+      if (key === 'color') {
+        // console.log('color');
+        pdf.fill(val)
+      }
     }
   }
 
@@ -171,9 +182,15 @@ const draw = (node: PDFNodes | PDFElements) => {
 
 const walk = (node: PDFNodes | PDFElements) => {
   if (node instanceof PDFElement) {
-    for (const child of node.children) {
-      draw(nodeMap[child]);
-      walk(nodeMap[child]);
+    // NOTE: this generates ERR (Max callstack size limit reached)
+    // for (const child of node.children) {
+    //   draw(nodeMap[child]);
+    //   walk(nodeMap[child]);
+    // }
+
+    for (let i = 0; i < node.children.length; i++) {
+      draw(nodeMap[i])
+      walk(nodeMap[i])
     }
   }
 }
