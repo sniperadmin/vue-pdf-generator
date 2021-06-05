@@ -1,3 +1,4 @@
+// SECTION: General imports
 import {
   createRenderer,
   compile,
@@ -8,28 +9,39 @@ import {
 } from 'vue'
 import PDFDocument from 'pdfkit'
 import * as fs from 'fs'
+// !SECTION
 
+// SECTION: custom imports
 import { PDFNode } from './vnode/PDFNode'
 import { PDFTextNode } from './vnode/PDFTextNode'
+// !SECTION
 
+// SECTION: services imports
 import definePDFComponent from './services/DefinePDFComponent'
+// !SECTION
 
+// SECTION: class definitions
 class PDFElement extends PDFNode {}
 class PDFTextElement extends PDFElement {}
 class PDFViewElement extends PDFElement {}
 class PDFDocumentElement extends PDFElement {}
+// !SECTION
 
+// SECTION: type definitions
 type PDFNodes = PDFTextNode
 type PDFElements = PDFTextElement | PDFViewElement | PDFDocumentElement
+// !SECTION
 
 const pdf = new PDFDocument()
 const stream = pdf.pipe(fs.createWriteStream('../meow.pdf'))
 
-
+// NOTE: Define Tags to be compiled
 const View = definePDFComponent('View')
 const Text = definePDFComponent('Text')
-const Document = definePDFComponent('Document')
+// TODO: add document later
+const Document = definePDFComponent('Document') 
 
+// SECTION: create app obj
 const App = defineComponent({
   components: {
     'Text': Text,
@@ -48,6 +60,7 @@ function noop(fn: string): any {
   throw Error(`no-op: ${fn}`)
 }
 
+// NOTE: define nodemap record and node options
 const nodeMap: Record<string, PDFNodes | PDFElements> = {}
 
 const nodeOps: RendererOptions<PDFNodes, PDFElements> = {
@@ -107,6 +120,7 @@ const nodeOps: RendererOptions<PDFNodes, PDFElements> = {
   remove: () => noop('remove'),
 }
 
+// NOTE: create renderer with the options
 const { createApp } = createRenderer(nodeOps)
 
 // This approach is better than const app = createApp(App)
@@ -117,8 +131,8 @@ const app = createApp({
 
 const root = new PDFDocumentElement()
 
-const vm = app.mount(root)
-
+// NOTE: for debugging
+// const vm = app.mount(root)
 // console.log(vm.$.subTree);
 
 const defaultStyles: any = {
